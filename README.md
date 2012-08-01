@@ -1,6 +1,11 @@
-winlogd Copyright 2004 Edoceo, Inc.
+# winlogd
 
-This software is released under the GPL, see the source files for more information.
+* Homepage: http://edoceo.com/creo/winlogd
+* Copyright: 2004 Edoceo, Inc.
+* License: released under the MIT style license
 
+## Building
 
-Open winlogd.sln with Microsoft Visual Studio.NET
+* Open winlogd.sln with Microsoft Visual Studio.NET 2003
+* Build
+
