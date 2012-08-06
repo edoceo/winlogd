@@ -1,7 +1,4 @@
 /*
- $Id$
- spec: Defines the winlogd Service
-
 winlogd - Send Windows Event Logs to a syslog server
 Copyright (C) 2004 Edoceo, Inc.
 
@@ -56,7 +53,7 @@ public:
     {
       Diagnostics::EventLog* el = __try_cast<Diagnostics::EventLog*>(e->Current);
       el->EnableRaisingEvents = true;
-      el->EntryWritten+= new EntryWrittenEventHandler(this,EventHook);
+      el->EntryWritten+= new EntryWrittenEventHandler(this,&winlogd::EventHook);
     }
 
     // Read our operation parameters
