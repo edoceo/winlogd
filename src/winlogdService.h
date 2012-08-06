@@ -56,7 +56,7 @@ public:
     {
       Diagnostics::EventLog* el = __try_cast<Diagnostics::EventLog*>(e->Current);
       el->EnableRaisingEvents = true;
-      el->EntryWritten+= new EntryWrittenEventHandler(this,EventHook);
+      el->EntryWritten+= new EntryWrittenEventHandler(this, &winlogd::EventHook);
     }
 
     // Read our operation parameters
