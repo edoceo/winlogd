@@ -25,17 +25,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 // note: Localisation would be nice
 
 // Service Class
-public __gc class winlogd : public ServiceBase
+public ref class winlogd : public ServiceBase
 {
 private:
 
   static int facility=0;
   // First one is to offset so Jan==1 and Dec==12, this should be localised
-  static String* months __gc[] = { "NUL","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec" };
-  static String* facilities __gc[] = { "local0","local1","local2","local3","local4","local5","local6","local7" };
+  static array<String^>^ months = { "NUL","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec" };
+  static array<String^>^ facilities = { "local0","local1","local2","local3","local4","local5","local6","local7" };
     
-  Diagnostics::EventLog* mlogs[];  // Logs to monitor
-  UdpClient* syslog_server;
+  array<Diagnostics::EventLog^>^ mlogs;  // Logs to monitor
+  UdpClient^ syslog_server;
 
 public:
   winlogd(void)
@@ -47,29 +47,29 @@ public:
     this->ServiceName = "winlogd";
   }
 
-  void OnStart(String* args __gc[])
+  virtual void OnStart(array<String^>^ args) override
   {
     // Attach Listener to each EventLog
-    mlogs = EventLog::GetEventLogs();
-    Collections::IEnumerator* e = mlogs->GetEnumerator();
+    mlogs = Diagnostics::EventLog::GetEventLogs();
+    Collections::IEnumerator^ e = mlogs->GetEnumerator();
     while (e->MoveNext())
     {
-      Diagnostics::EventLog* el = __try_cast<Diagnostics::EventLog*>(e->Current);
+      Diagnostics::EventLog^ el = safe_cast<Diagnostics::EventLog^>(e->Current);
       el->EnableRaisingEvents = true;
-      el->EntryWritten+= new EntryWrittenEventHandler(this,EventHook);
+      el->EntryWritten+= gcnew EntryWrittenEventHandler(this,&winlogd::EventHook);
     }
 
     // Read our operation parameters
-    RegistryKey* k = Registry::LocalMachine->OpenSubKey(WINLOGD_PARAM_KEY);
-    this->syslog_server = new UdpClient(
-      k->GetValue("Server",S"syslog")->ToString()->ToLower() ,
-      Convert::ToInt32(k->GetValue("Port",S"514")->ToString())
+    RegistryKey^ k = Registry::LocalMachine->OpenSubKey(WINLOGD_PARAM_KEY);
+    this->syslog_server = gcnew UdpClient(
+      k->GetValue("Server","syslog")->ToString()->ToLower() ,
+      Convert::ToInt32(k->GetValue("Port","514")->ToString())
     );
 
     // Facility
     int i=0;
     this->facility = 16; // Default to local0
-    String* f = Convert::ToString(k->GetValue("Facility"));
+    String^ f = Convert::ToString(k->GetValue("Facility"));
     for(i=0;i<facilities->Length;i++)
     {
       if (String::Compare(f , this->facilities[i], true)==0)
@@ -79,32 +79,32 @@ public:
       }
     }
     // String array of sources to ignore
-    //System::Object* o = k->GetValue("Ignore");
-    //if ( o->GetType()->IsArray ) sources[] = __try_cast<String*[]>(o);
+    //System::Object^ o = k->GetValue("Ignore");
+    //if ( o->GetType()->IsArray ) sources = safe_cast<array<String^>^>(o);
     k->Close();
   }
 
   // func: OnPowerEvent(PowerBroadcastStatus ps)
   // note: Currently this does not do anything 
-  bool OnPowerEvent(PowerBroadcastStatus ps)
+  virtual bool OnPowerEvent(PowerBroadcastStatus ps) override
   {
     //Byte pkt[] = System::Text::Encoding::ASCII->GetBytes( "Power Event!" );
     //send_packet(pkt);
     return true;
   }
 
-  void OnStop(void)
+  virtual void OnStop(void) override
   {
     // Close all the EventLog objects
-    Collections::IEnumerator* e = mlogs->GetEnumerator();
+    Collections::IEnumerator^ e = mlogs->GetEnumerator();
     while (e->MoveNext())
     {
-      Diagnostics::EventLog* el = __try_cast<Diagnostics::EventLog*>(e->Current);
+      Diagnostics::EventLog^ el = safe_cast<Diagnostics::EventLog^>(e->Current);
       el->Close();
     }
   }
 
-  void OnShutdown()
+  virtual void OnShutdown() override
   {
     //Text::StringBuilder* msg = new Text::StringBuilder(1024,1024);
     //msg->Append(String::Concat("<", Convert::ToString( (facility*8)+6), ">"));
@@ -112,9 +112,9 @@ public:
 
   // func: EventHook(Object* o, EntryWrittenEventArgs* e)
   // spec: This is the meat of this application
-  void EventHook(Object* o, EntryWrittenEventArgs* e)
+  void EventHook(Object^ o, EntryWrittenEventArgs^ e)
   {
-    Text::StringBuilder* msg = new Text::StringBuilder(1024,1024);
+    Text::StringBuilder^ msg = gcnew Text::StringBuilder(1024,1024);
 
     // Windows Only Has Error, Warning and Notice, FailureAudit and SuccessAudit
     int priority = 0;
@@ -130,7 +130,7 @@ public:
     // HEADER::TIMESTAMP
     msg->Append( String::Concat(this->months[e->Entry->TimeGenerated.Month]," ") );
     msg->Append( String::Format( "{0,2}", e->Entry->TimeGenerated.Day.ToString()) );
-    msg->Append(S" ");
+    msg->Append(" ");
     msg->Append( String::Concat(e->Entry->TimeGenerated.Hour.ToString("00"),":") );
     msg->Append( String::Concat(e->Entry->TimeGenerated.Minute.ToString("00"),":") );
     msg->Append( String::Concat(e->Entry->TimeGenerated.Second.ToString("00")," ") );
@@ -144,16 +144,16 @@ public:
     
     // MSG::CONTENT
     // Have to clean out \r and \t, syslog will replace \n with " "
-    String* clean = e->Entry->Message->Replace("\r","");
+    String^ clean = e->Entry->Message->Replace("\r","");
     msg->Append( clean->Replace("\t","") );
 
     // Send To Server
-    Byte pkt[] = System::Text::Encoding::ASCII->GetBytes(msg->ToString());
+    array<Byte>^ pkt = System::Text::Encoding::ASCII->GetBytes(msg->ToString());
     this->syslog_server->Send(pkt,pkt->Length);
     delete pkt;
 
     // note: this is useful for debugging
-    //StreamWriter* sw = File::AppendText("c:\\winlogd.log");
+    //StreamWriter^  sw = File::AppendText("c:\\winlogd.log");
     //sw->WriteLine(msg->ToString());
     //sw->Close();
   }

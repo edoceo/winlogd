@@ -6,6 +6,6 @@
 
 ## Building
 
-* Open winlogd.sln with Microsoft Visual Studio.NET 2003
+* Open winlogd.sln with Microsoft Visual Studio 2010
 * Build
 

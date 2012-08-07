@@ -1,21 +1,20 @@
-Microsoft Visual Studio Solution File, Format Version 8.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winlogd", "winlogd.vcproj", "{2C0E6617-FB32-4B15-820D-7F06A97CCF95}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winlogd", "winlogd.vcxproj", "{D15C13E6-A0E2-4018-9325-0C323BD97927}"
 EndProject
 Global
-	GlobalSection(SolutionConfiguration) = preSolution
-		Debug = Debug
-		Release = Release
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ProjectConfiguration) = postSolution
-		{2C0E6617-FB32-4B15-820D-7F06A97CCF95}.Debug.ActiveCfg = Debug|Win32
-		{2C0E6617-FB32-4B15-820D-7F06A97CCF95}.Debug.Build.0 = Debug|Win32
-		{2C0E6617-FB32-4B15-820D-7F06A97CCF95}.Release.ActiveCfg = Release|Win32
-		{2C0E6617-FB32-4B15-820D-7F06A97CCF95}.Release.Build.0 = Release|Win32
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D15C13E6-A0E2-4018-9325-0C323BD97927}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D15C13E6-A0E2-4018-9325-0C323BD97927}.Debug|Win32.Build.0 = Debug|Win32
+		{D15C13E6-A0E2-4018-9325-0C323BD97927}.Release|Win32.ActiveCfg = Release|Win32
+		{D15C13E6-A0E2-4018-9325-0C323BD97927}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-	EndGlobalSection
-	GlobalSection(ExtensibilityAddIns) = postSolution
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

@@ -22,17 +22,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 // note: see http://www.ietf.org/rfc/rfc3164.txt 
 
-#using <mscorlib.dll>
-#using <System.dll>
-#using <System.Configuration.Install.dll>
-#using <System.ServiceProcess.dll>
-
 using namespace System;
 using namespace System::Configuration::Install;
 using namespace System::Diagnostics;
 using namespace System::Net::Sockets;
 using namespace System::ServiceProcess;
 using namespace Microsoft::Win32;
+//using namespace System::IO;
 
 #define WINLOGD_APP_NAME "Edoceo, Inc. winlogd v1.5\n  http://www.edoceo.com/creo/winlogd\n"
 #define WINLOGD_SERVICE_KEY "SYSTEM\\CurrentControlSet\\Services\\winlogd"
@@ -41,22 +37,22 @@ using namespace Microsoft::Win32;
 #define WINLGOD_LOG_CRIT 2
 #define WINLGOD_LOG_ERROR 3
 #define WINLGOD_LOG_WARNING 4
-#define WINLGOD_LOG_NOTICE 5
+//#define WINLGOD_LOG_NOTICE 5
 #define WINLGOD_LOG_INFO 6
 
 #include "winlogdService.h"
 
 // Installer Class
-public __gc class winlogi : public Installer
+public ref class winlogi : public Installer
 {
 public:
   winlogi(void)
   {
-    ServiceProcessInstaller* spi = new ServiceProcessInstaller();
+    ServiceProcessInstaller^ spi = gcnew ServiceProcessInstaller();
     spi->Account = ServiceAccount::LocalSystem;
 
-    ServiceInstaller* si = new ServiceInstaller();
-    si->ServiceName = S"winlogd";
+    ServiceInstaller^ si = gcnew ServiceInstaller();
+    si->ServiceName = "winlogd";
     si->StartType = ServiceStartMode::Automatic;
 
     Installers->Add(spi);
@@ -67,15 +63,15 @@ public:
 //install_uninstall - Will add or remove winlogd based on bool uninstall
 int install_uninstall(bool uninstall)
 {
-  Collections::ArrayList* cmdline = new Collections::ArrayList();
+  Collections::ArrayList^ cmdline = gcnew Collections::ArrayList();
   cmdline->Add(String::Format("/assemblypath={0}",System::Reflection::Assembly::GetExecutingAssembly()->Location));
-  cmdline->Add(S"/logToConsole=false");
-  cmdline->Add(S"/showCallStack");
+  cmdline->Add("/logToConsole=false");
+  cmdline->Add("/showCallStack");
 
-  InstallContext* ctx = new InstallContext(S"winlogi.log",__try_cast<String* []>( cmdline->ToArray(__typeof(String))));
+  InstallContext^ ctx = gcnew InstallContext("winlogi.log", safe_cast<array<String^>^>(cmdline->ToArray(String::typeid)));
 
-  TransactedInstaller* ti = new TransactedInstaller();
-  ti->Installers->Add(new winlogi());
+  TransactedInstaller^ ti = gcnew TransactedInstaller();
+  ti->Installers->Add(gcnew winlogi());
   ti->Context = ctx;
   //try
   //{
@@ -83,37 +79,37 @@ int install_uninstall(bool uninstall)
     {
       try
       {
-        ti->Install(new Collections::Hashtable());
+        ti->Install(gcnew Collections::Hashtable());
       }
-      catch (Exception* e)
+      catch (Exception^ e)
       {
         Console::WriteLine(e->InnerException->Message);
         return(1);
       }
 
-  RegistryKey* k = Registry::LocalMachine->OpenSubKey(WINLOGD_SERVICE_KEY,true);
-  k->SetValue("Description",S"Sends Windows Event Log data to a syslog server");
+  RegistryKey^ k = Registry::LocalMachine->OpenSubKey(WINLOGD_SERVICE_KEY,true);
+  k->SetValue("Description","Sends Windows Event Log data to a syslog server");
   // Operation Parameters
-  k->CreateSubKey(S"Parameters");
+  k->CreateSubKey("Parameters");
   k->Close();
 
   // Do Parameters
-  String* s;
+  String^ s;
   int i;
   // todo: check if it exists first then only change if it doesn't
   k = Registry::LocalMachine->OpenSubKey(WINLOGD_PARAM_KEY,true);
   // Flush
-  //i = Convert::ToInt32( k->GetValue("Flush",S"0")->ToString() );
-  //if (i==0) k->SetValue("Flush", __box(6000));
+  //i = Convert::ToInt32( k->GetValue("Flush","0")->ToString() );
+  //if (i==0) k->SetValue("Flush", 6000);
   // Monitor
-  // k->SetValue("Monitor", __box(6000));
-  i = Convert::ToInt32( k->GetValue("Port",S"0")->ToString() );
-  if (i==0) k->SetValue("Port", __box(514));
+  // k->SetValue("Monitor", 6000);
+  i = Convert::ToInt32( k->GetValue("Port","0")->ToString() );
+  if (i==0) k->SetValue("Port", 514);
   // Server
-  s = k->GetValue("Server",S"default")->ToString();
-  if (String::Compare(s,S"default")==0) k->SetValue("Server", S"syslog");
-  s = k->GetValue("Facility",S"default")->ToString();
-  if (String::Compare(s,S"default")==0) k->SetValue("Facility", S"local4");
+  s = k->GetValue("Server","default")->ToString();
+  if (String::Compare(s,"default")==0) k->SetValue("Server", "syslog");
+  s = k->GetValue("Facility","default")->ToString();
+  if (String::Compare(s,"default")==0) k->SetValue("Facility", "local4");
   k->Close();
 
       Console::WriteLine("Installation successful, say `net start winlogd`");
@@ -122,9 +118,9 @@ int install_uninstall(bool uninstall)
     {
       try
       {
-        ti->Uninstall(0);
+        ti->Uninstall(nullptr);
       }
-      catch (Exception* e)
+      catch (Exception^ e)
       {
         //e->InnerException->Message
         Console::WriteLine(e->InnerException->Message);
@@ -133,7 +129,7 @@ int install_uninstall(bool uninstall)
     }
         
   //}
-  //catch (Exception* e)
+  //catch (Exception^ e)
   //{
   //  Console::WriteLine( e->StackTrace );
   //  return 1;
@@ -143,18 +139,18 @@ int install_uninstall(bool uninstall)
 
 int list_services()
 {
-  Diagnostics::EventLog* logs[] = EventLog::GetEventLogs();
-  Collections::IEnumerator* e = logs->GetEnumerator();
+  array<Diagnostics::EventLog^>^ logs = EventLog::GetEventLogs();
+  Collections::IEnumerator^ e = logs->GetEnumerator();
   while (e->MoveNext())
   {
-    Diagnostics::EventLog* el = __try_cast<Diagnostics::EventLog*>(e->Current);
+    Diagnostics::EventLog^ el = safe_cast<Diagnostics::EventLog^>(e->Current);
     Console::Write(String::Concat(el->Log,":\n  "));
     // Open Logs Registry Key to read sources
-    RegistryKey* k = Registry::LocalMachine->OpenSubKey(String::Concat("SYSTEM\\CurrentControlSet\\Services\\EventLog\\",el->Log));
-    System::Object* o = k->GetValue("Sources");
+    RegistryKey^ k = Registry::LocalMachine->OpenSubKey(String::Concat("SYSTEM\\CurrentControlSet\\Services\\EventLog\\",el->Log));
+    System::Object^ o = k->GetValue("Sources");
     if ( o->GetType()->IsArray )
     {
-      String* sources[] = __try_cast<String*[]>(o);
+      array<String^>^ sources = safe_cast<array<String^>^>(o);
       // NOTE: Version 1.2 added sorting to the output array
       Array::Sort(sources);
       for (int i=0;i<sources->Length;i++)
@@ -173,61 +169,68 @@ int list_services()
 void reg_dump_parameters()
 {
   // Registry Operation Parameters
-  RegistryKey* k = Registry::LocalMachine->OpenSubKey(WINLOGD_PARAM_KEY);
-  Console::WriteLine( String::Concat("Server:   ", k->GetValue("Server",S"syslog")->ToString() ) );
-  Console::WriteLine( String::Concat("Port:     ", k->GetValue("Port",S"514")->ToString() ) );
-  Console::WriteLine( String::Concat("Facility: ", k->GetValue("Facility",S"local1")->ToString() ) );
-  Console::WriteLine( String::Concat("Monitor:  ", k->GetValue("Monitor",S"6000")->ToString() ) );
-  Console::WriteLine( String::Concat("Flush:    ", k->GetValue("Flush",S"6000")->ToString() ) );
-  k->Close();
+  RegistryKey^ k = Registry::LocalMachine->OpenSubKey(WINLOGD_PARAM_KEY);
+  Console::WriteLine( String::Concat("Server:   ", k!=nullptr? k->GetValue("Server","syslog")->ToString() : "N/A" ) );
+  Console::WriteLine( String::Concat("Port:     ", k!=nullptr? k->GetValue("Port","514")->ToString() : "N/A" ) );
+  Console::WriteLine( String::Concat("Facility: ", k!=nullptr? k->GetValue("Facility","local1")->ToString() : "N/A" ) );
+  Console::WriteLine( String::Concat("Monitor:  ", k!=nullptr? k->GetValue("Monitor","6000")->ToString() : "N/A" ) );
+  Console::WriteLine( String::Concat("Flush:    ", k!=nullptr? k->GetValue("Flush","6000")->ToString() : "N/A" ) );
+  if (k != nullptr)
+    k->Close();
 }
 
 // func: test_winlogd - Write three messages to the log, then flush
 int test_winlogd()
 {
-  String* src = "winlogd";
+  String^ src = "winlogd";
 
   if ( !EventLog::SourceExists(src) ) EventLog::CreateEventSource(src, "Application"); 
-  EventLog* el = new EventLog("Application", ".", src);
+  EventLog^ el = gcnew EventLog("Application", ".", src);
 
-  el->WriteEntry( S"Application Log Informational Message", EventLogEntryType::Information, 1, 1);
-  el->WriteEntry( S"Application Log Warning Message", EventLogEntryType::Warning, 2, 1 );
-  el->WriteEntry( S"Application Log Error Message", EventLogEntryType::Error, 3, 1 );
-  el->WriteEntry( S"Application Log Success Audit", EventLogEntryType::SuccessAudit, 4, 1 );
-  el->WriteEntry( S"Application Log Failure Audit", EventLogEntryType::FailureAudit, 5, 1 );
+  el->WriteEntry( "Application Log Informational Message", EventLogEntryType::Information, 1, 1);
+  el->WriteEntry( "Application Log Warning Message", EventLogEntryType::Warning, 2, 1 );
+  el->WriteEntry( "Application Log Error Message", EventLogEntryType::Error, 3, 1 );
+  el->WriteEntry( "Application Log Success Audit", EventLogEntryType::SuccessAudit, 4, 1 );
+  el->WriteEntry( "Application Log Failure Audit", EventLogEntryType::FailureAudit, 5, 1 );
 
   return 0;
 }
 
-// main
-int main(int argc, char* argv[])
+int main(array<System::String ^> ^args)
 {
-  if (argc >= 2)
+  try
   {
-    String* cmd = new String(argv[1]);
-    if ( (cmd->Equals(S"-i")) || (cmd->Equals(S"-u")) ) { return install_uninstall(cmd->Equals(S"-u")); }
-    else if ( (cmd->Equals(S"-d")) || (cmd->Equals(S"--dump")) ) { return reg_dump_parameters(); }
-    else if ( (cmd->Equals(S"-h")) || (cmd->Equals(S"--help")) )
+    if (args->Length >= 1)
     {
-      Console::Write(WINLOGD_APP_NAME);
-      Console::Write("Options:\n");
-      Console::Write("  --dump\tShow the registry parameters\n");
-      Console::Write("  --help\tThis help\n");
-      Console::Write("  --list\tList the Event Sources, facilities and levels\n");
-      Console::Write("  --test\tRun some internal tests\n");
-      Console::Write("  -i\tInstall\n\t-u\tUninstall\n");
+      String^ cmd = gcnew String(args[0]);
+      if ( (cmd->Equals("-i")) || (cmd->Equals("-u")) ) { return install_uninstall(cmd->Equals("-u")); }
+      else if ( (cmd->Equals("-d")) || (cmd->Equals("--dump")) ) { return reg_dump_parameters(); }
+      else if ( (cmd->Equals("-h")) || (cmd->Equals("--help")) )
+      {
+        Console::Write(WINLOGD_APP_NAME);
+        Console::Write("Options:\n");
+        Console::Write("  --dump\tShow the registry parameters\n");
+        Console::Write("  --help\tThis help\n");
+        Console::Write("  --list\tList the Event Sources, facilities and levels\n");
+        Console::Write("  --test\tRun some internal tests\n");
+        Console::Write("  -i\t\tInstall\n  -u\t\tUninstall\n");
+      }
+      else if ( (cmd->Equals("-l")) || (cmd->Equals("--list")) ) { return list_services(); }
+      else if ( (cmd->Equals("-t")) || (cmd->Equals("--test")) ) { return test_winlogd(); }
+      else if ( (cmd->Equals("-V")) || (cmd->Equals("--version")) )
+      {
+        Console::WriteLine(WINLOGD_APP_NAME);
+        Console::WriteLine("Released under the terms of the GPL");
+        Console::WriteLine("see http://www.edoceo.com/ for more information");
+      }
+      return(0);
     }
-    else if ( (cmd->Equals(S"-l")) || (cmd->Equals(S"--list")) ) { return list_services(); }
-    else if ( (cmd->Equals(S"-t")) || (cmd->Equals(S"--test")) ) { return test_winlogd(); }
-    else if ( (cmd->Equals(S"-V")) || (cmd->Equals(S"--version")) )
-    {
-      Console::WriteLine(WINLOGD_APP_NAME);
-      Console::WriteLine("Released under the terms of the GPL");
-      Console::WriteLine("see http://www.edoceo.com/ for more information");
-    }
-    return(0);
+    ServiceBase::Run(gcnew winlogd());
   }
-  ServiceBase::Run(new winlogd());
+  catch(Exception^ ex) 
+  { 
+    Console::WriteLine("An error occurred:"); 
+    Console::WriteLine(ex->ToString()); 
+  }
   return 0;
 }
-
